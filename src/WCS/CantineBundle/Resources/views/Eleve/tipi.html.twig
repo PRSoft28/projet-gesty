@@ -1,7 +1,114 @@
 {% extends '::base.html.twig' %}
 {% block body %}
+<?php
+$alert = NULL;
+/* Si le formulaire est envoyé alors on fait les traitements */
+if (isset($_POST['envoyer']))
+{
+    /* Récupération des valeurs des champs du formulaire */
+    if (get_magic_quotes_gpc())
+    {
+      $date	     	= stripslashes(trim($_POST['date']));
+      $montant		= stripslashes(trim(str_replace(",","",number_format($_POST['montant'], 2, ',', ' '))));
+      $mel	     	= stripslashes(trim($_POST['mel']));
+      $refdet	= stripslashes(trim($_POST['refdet']));
+    }
+    else
+    {
+      $date	     	= trim($_POST['date']);
+      $montant		= trim(str_replace(",","",number_format($_POST['montant'], 2, ',', ' ')));
+      $mel	     	= trim($_POST['mel']);
+      $refdet	= trim($_POST['refdet']);
+    }
+    
+    /* Expression régulière permettant de vérifier qu'aucun 
+    * en-tête n'est inséré dans nos champs */
+    $regex_head = '/[\n\r]/';
+    
+    /* Si le formulaire n'est pas posté de notre site on renvoie 
+    * vers la page d'accueil (Partie à modifier en fonction du vos url ou bloc if à enlever complètement) */
+    if($_SERVER['HTTP_REFERER'] != 'http://www.gesty.fr/telepaiement/telepaiement.php' and
+	$_SERVER['HTTP_REFERER'] != 'http://gesty.fr/telepaiement/telepaiement.php')
+    {
+	  $alert = 'Erreur interne !';
+      header('Location: http://www.gesty.fr/');
+    }
+    /* On vérifie que tous les champs sont remplis */
+    if (empty($montant) 
+           || empty($mel) 
+           || empty($refdet)
+           || empty($date))
+    {
+      $alert = 'Tous les champs doivent &ecirc;tre renseign&eacute;s';
+    }
+    /* On vérifie qu'il n'y a aucun header dans les champs */
+    if (preg_match($regex_head, $montant) 
+            || preg_match($regex_head, $mel)
+            || preg_match($regex_head, $refdet)
+            || preg_match($regex_head, $date))
+    {
+        $alert = 'En-t&ecirc;tes interdites dans les champs du formulaire';
+	}
+	if (isset($_POST['envoyer']))
+	{
+		if (empty($alert)){
 
-
-
-bla
+			header('Location: https://www.tipi.budget.gouv.fr/tpa/paiement.web?numcli=012327&exer='.$date.'&refdet='.$date.$refdet.'&montant='.$montant.'&mel='.$mel.'&urlcl=http:/www.gesty.fr&saisie=A');
+		}
+	}
+}
+?>
+<!DOCTYPE html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf8" />
+	</head>
+<html>
+	<body>
+		<h1>T&eacute;l&eacute;paiement</h1>
+		<?php
+		if (!empty($alert))
+		{
+			echo '<p style="color:red;">'.$alert.'</p>';
+		}
+		?>
+		<fieldset style="height:220px;width:240px;">
+			<form method="post" action="telepaiement.php">
+				
+				<div>
+					<label for="date">Exercice <span>(1)</span> :</label>
+				</div>
+				<div>
+					<input type="text" name="date" id="date" value="<?php echo date('Y') ?>">
+				</div>
+				<div>
+					<label for="montant">Montant <span>(2)</span> :</label>
+				</div>
+				<div>
+					<input type="text" name="montant" id="montant">
+				</div>
+				<div>
+					<label for="mel">Votre adresse mail <span>(3)</span> :</label>
+				</div>
+				<div>
+					<input type="text" name="mel" id="mel">
+				</div>
+				<div>
+					<label for="refdet">R&eacute;f&eacute;rence Facture <span>(4)</span> :</label>
+				</div>
+				<div>
+					<input type="text" name="refdet" id="refdet">
+				</div>
+				<div style="clear:both; text-align:center; padding-top:10px;">
+					<input name="annuler" value="Annuler" type="reset">
+					<input style="margin-left:15%;" name="envoyer" value="Envoyer" type="submit">
+				</div>
+			</form>
+			<p>* Tous les champs sont obligatoires</p>
+			<p>(1) Saisir l&#146;ann&eacute;e au format AAAA</p>
+			<p>(2) Saisir le montant &agrave; r&eacute;gler sans &euro;</p>
+			<p>(3) Renseigner votre adresse e-mail pour recevoir votre ticket de paiement</p>
+			<p>(4) Renseigner le num&eacute;ro de la facture</p>
+		</fieldset>
+	</body>
+</html>
 {% endblock %}
